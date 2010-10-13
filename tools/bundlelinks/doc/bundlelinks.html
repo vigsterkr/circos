@@ -1,0 +1,170 @@
+<HTML>
+<HEAD>
+<TITLE>bundlelinks - bundle neighbouring links together in an effort to reduce complexity of link structure</TITLE>
+<LINK REV="made" HREF="mailto:root@gene0.cigenomics.bc.ca">
+</HEAD>
+
+<BODY>
+
+<!-- INDEX BEGIN -->
+
+<UL>
+
+	<LI><A HREF="#NAME">NAME</A>
+	<LI><A HREF="#SYNOPSIS">SYNOPSIS</A>
+	<LI><A HREF="#DESCRIPTION">DESCRIPTION</A>
+	<LI><A HREF="#OUTPUT">OUTPUT</A>
+	<LI><A HREF="#OPTIONS">OPTIONS</A>
+	<UL>
+
+		<LI><A HREF="#_max_gap">-max_gap</A>
+		<LI><A HREF="#_min_bundle_membership_strict">-min_bundle_membership, -strict</A>
+		<LI><A HREF="#_min_bundle_size">-min_bundle_size</A>
+		<LI><A HREF="#_min_bundle_identity">-min_bundle_identity</A>
+	</UL>
+
+	<LI><A HREF="#HISTORY">HISTORY</A>
+	<LI><A HREF="#BUGS">BUGS</A>
+	<LI><A HREF="#AUTHOR">AUTHOR</A>
+	<LI><A HREF="#CONTACT">CONTACT</A>
+</UL>
+<!-- INDEX END -->
+
+<HR>
+<P>
+<HR>
+<H1><A NAME="NAME">NAME</A></H1>
+<P>
+bundlelinks - bundle neighbouring links together in an effort to reduce
+complexity of link structure
+
+<P>
+<HR>
+<H1><A NAME="SYNOPSIS">SYNOPSIS</A></H1>
+<P>
+<PRE>  bundlelinks -links linkfile.txt -max_gap NUM
+              {-min_bundle_membership NUM | -strict }
+              {-min_bundle_size NUM}
+              {-min_bundle_identity FRACTION}
+</PRE>
+<P>
+<PRE>  bundlelinks -links data/dog.vs.human.all.txt &gt; data/dog.vs.human.bundles.txt
+</PRE>
+<P>
+<HR>
+<H1><A NAME="DESCRIPTION">DESCRIPTION</A></H1>
+<P>
+The purpose of this script is to turn a large set of links into a smaller
+one by merging neighbouring links.
+
+<P>
+<HR>
+<H1><A NAME="OUTPUT">OUTPUT</A></H1>
+<P>
+The script produces a new link file to STDOUT.
+
+<P>
+A tally is sent to STDERR that lists the following
+
+<P>
+<PRE>  # total number of links read in
+  num_links 39978
+  # number of links in initial bundles (filtered for membership)
+  num_links_in_init_bundles 39839
+  # total number of initial bundles
+  num_init_bundles 524
+  # number of accepted bundles (filtered for both size and membership)
+  num_passed_bundles 277 (52.86%)
+  # number of links in accepted bundles
+  num_links_in_passed_bundles 36732 (92.20%)
+</PRE>
+<P>
+<HR>
+<H1><A NAME="OPTIONS">OPTIONS</A></H1>
+<P>
+<HR>
+<H2><A NAME="_max_gap">-max_gap</A></H2>
+<P>
+Adjacent links are merged into bundles if their start/end coordinates are
+sufficiently close. Given two links L1 and L2, they are merged into a
+bundle if
+
+<P>
+<PRE>  chr( start(L1) ) == chr( start(L2) )
+  chr( end(L1) ) == chr( end(L2) )
+</PRE>
+<P>
+<PRE>  distance( start(L1), start(L2) ) &lt;= MAX_GAP
+  distance( end(L1), end(L2) ) &lt;= MAX_GAP
+</PRE>
+<P>
+If a link does not have any acceptable adjacent neighbouring links, it
+forms a single-link bundle.
+
+<P>
+<HR>
+<H2><A NAME="_min_bundle_membership_strict">-min_bundle_membership, -strict</A></H2>
+<P>
+These parameters filter bundles with few links. You can set the minimum
+number of links required in a bundle for the bundle to be accepted
+(-min_bundle_membership).
+
+<P>
+The -strict option is equivalent to -min_bundle_membership 2.
+
+<P>
+<HR>
+<H2><A NAME="_min_bundle_size">-min_bundle_size</A></H2>
+<P>
+In addition to, or in place of, filtering bundles based on the number of
+links they comprise, you can accept bundles based on the size of the links
+in the bundle.
+
+<P>
+The minimum size parameter is applied independently to both ends of all
+links in a bundle.
+
+<P>
+<HR>
+<H2><A NAME="_min_bundle_identity">-min_bundle_identity</A></H2>
+<P>
+This parameter filters bundles based on the bundle identity, which is
+defined as
+
+<P>
+<PRE> identity = size(merged links) / extent(merged links)
+</PRE>
+<P>
+Both ends of the bundle are evaluated independently.
+
+<P>
+<HR>
+<H1><A NAME="HISTORY">HISTORY</A></H1>
+<UL>
+<LI><STRONG><A NAME="item_16">16 July 2008</A></STRONG>
+<P>
+Started and versioned.
+
+</UL>
+<P>
+<HR>
+<H1><A NAME="BUGS">BUGS</A></H1>
+<P>
+<HR>
+<H1><A NAME="AUTHOR">AUTHOR</A></H1>
+<P>
+Martin Krzywinski
+
+<P>
+<HR>
+<H1><A NAME="CONTACT">CONTACT</A></H1>
+<P>
+<PRE>  Martin Krzywinski
+  Genome Sciences Centre
+  Vancouver BC Canada
+  www.bcgsc.ca
+  martink@bcgsc.ca
+</PRE>
+</BODY>
+
+</HTML>

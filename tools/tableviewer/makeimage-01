@@ -1,0 +1,14 @@
+#!/bin/bash
+
+echo "****************************************************************"
+echo "Creating test image 01."
+echo "For other tables, see samples/table-NN.txt and then use"
+echo ">makeimage NN"
+echo "e.g. makeimage 02"
+echo "****************************************************************"
+
+n=01
+
+cat samples/table-$n.txt | bin/parse-table -conf samples/parse-table-$n.conf | bin/make-conf -dir data
+../../bin/circos -conf etc/circos.conf -outputfile table-$n.png
+

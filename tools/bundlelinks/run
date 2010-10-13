@@ -1,0 +1,4 @@
+#!/bin/bash
+
+bin/bundlelinks > data/dog.vs.human.bundles.new.txt
+

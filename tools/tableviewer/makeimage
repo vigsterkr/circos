@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [ -n "$1" ] 
+then
+n=$1
+else
+n=01
+fi
+
+cat samples/table-$n.txt | bin/parse-table -conf samples/parse-table-$n.conf | bin/make-conf -dir data
+../../bin/circos -conf etc/circos.conf -outputfile table-$n.png
+

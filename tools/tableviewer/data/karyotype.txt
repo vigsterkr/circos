@@ -1,0 +1,10 @@
+chr - id0 0 0 831 id0
+chr - id1 1 0 639 id1
+chr - id2 2 0 560 id2
+chr - id3 3 0 487 id3
+chr - id4 4 0 252 id4
+chr - id5 5 0 746 id5
+chr - id6 6 0 623 id6
+chr - id7 7 0 543 id7
+chr - id8 8 0 490 id8
+chr - id9 9 0 367 id9

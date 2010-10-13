@@ -1,0 +1,30 @@
+#!/bin/bash
+
+echo
+echo
+echo "This script sets the location of the Perl binary in Circos scripts,"
+echo "and sets the output directory for tutorial image files."
+echo 
+
+echo "What is the full path to your perl binary? (/bin/env perl)"
+read -e PERL
+if [ -z $PERL ] 
+then
+  PERL="/bin/env perl"
+fi
+echo "Setting Perl binary to $PERL"
+find bin/ -name "*" -type f | xargs perl -i -p -e "s%^\#\!.*%\#\!$PERL%"
+
+echo "What is the directory to which tutorial images should be written? (/tmp)"
+read -e OUTDIR
+if [ -z $OUTDIR ] 
+then
+  OUTDIR="/tmp"
+fi
+echo "Setting output directory for tutorial files to $OUTDIR"
+
+find tutorials -name 'circos*conf*' | xargs perl -i -p -e "s%^dir\s+=.*%dir = $OUTDIR%"
+
+echo
+echo "Done. You can run this script at any time to change these values."
+

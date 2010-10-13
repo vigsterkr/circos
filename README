@@ -1,0 +1,254 @@
+
+                                    ____ _              v0.52
+                                   / ___(_)_ __ ___ ___  __
+                                  | |   | | '__/ __/ _ \/ __|
+                                  | |___| | | | (_| (_) \__ \
+                                   \____|_|_|  \___\___/|___/
+
+                                                round is good
+
+################################################################
+
+Circos - circular genome data and annotation image generator
+
+v0.52
+
+Martin Krzywinski
+Canada's Michael Smith Genome Sciences Center
+British Columbia Cancer Agency
+
+martink@bcgsc.ca
+mkweb.bcgsc.ca/circos
+
+################################################################
+
+0. INTRODUCTION
+   0.a   what is circos?
+   0.b   requirements
+
+1. GETTING STARTED
+   1.a   installation 
+   1.b   tools
+
+2. BUGS
+   2.a 	 report bugs and comments
+   2.b   known issues
+
+3. INSTALLATION PROBLEMS
+   3.a   missing modules
+
+4. OTHER ISSUES
+   4.a   configuration paths
+   4.b   typical errors and how to fix them
+   4.b.1 numerical parameter units
+
+################################################################
+
+0. INTRODUCTION
+
+0.a  what is circos?
+
+Circos is a program for the generation of publication-quality, 
+circularly composited renditions of genomic data and related annotations. 
+
+Circos is particularly suited for visualizing alignments, conservation and 
+intra and inter-chromosomal relationships.
+
+But wait. Also, Circos is useful to visualize any type of information that
+benefits from a circular layout. Thus, although it has been designed for
+the field of genomics, it is sufficiently flexible to be used in other data
+domains.
+
+0.b  requirements
+
+Perl 5.8.x, or newer, is highly recommended. In addition to the core
+modules that come with your Perl distribution, the following CPAN
+modules are required
+
+Clone
+GD
+GD::Polyline
+List::Util
+Math::Bezier
+Math::BigFloat
+Math::Round
+Math::VecStat
+Params::Validate
+Readonly
+Set::IntSpan (v1.11, or later)
+
+Modules specific to Circos ship with the distribution in lib/.
+
+Circos supports TTF fonts. A few fonts are included in fonts/.
+
+1. GETTING STARTED
+
+1.a  installation
+
+> tar xvfz circos-x.xx.tgz
+> cd circos-x.xx
+> ./install
+
+The install script will alter the path to the Perl binary and output
+path for tutorial files. By default, the Perl in your path will be used (/bin/env perl) and /tmp will be assigned to the output directory.
+
+If you prefer to change the paths manually, adjust the first line in
+bin/circos to reflect its location. For example,
+
+  #!/path/to/my/perl
+
+and the dir parameter in <image> block in each tutorial/*/*/circos.conf file.
+
+  <image>
+  dir = /path/to/my/output
+  ...
+  </image>
+
+Now try creating an image from one of the tutorials. 
+
+> cd circos-x.xx
+> bin/circos -conf tutorials/2/2/circos.conf
+
+If everything goes well, the program should terminate with a line
+
+  created image at /path/to/your/output/your-output-file.png
+
+To get some verbose reporting, use 
+
+> bin/circos -conf tutorials/2/2/circos.conf -debug
+
+Please see mkweb.bcgsc.ca/circos for documentation. There are a large number
+of tutorials that described how the configuration files are formatted.
+
+1.b tools
+
+There are several helper scripts located in tools/ that are designed to aid you in processing your data.
+
+Many of these involve manipulating link files. These tools independent scripts and are covered in Tutorial 9.
+
+  http://mkweb.bcgsc.ca/circos/?tutorials&id=9
+
+The tools can be downloaded independently. Note that the stand-alone
+tools distribution may contain scripts that are newer than those
+bundled with Circos. To check this, look at the release date for the
+archives at http://mkweb.bcgsc.ca/circos/?download
+
+2. BUGS
+
+2.a  report bugs and comments
+
+I appreciate any and all comments you may have about Circos.
+
+2.b  known issues
+
+GD does not draw rotated text correctly when the font size is small. For example,
+using a font size of 6pt, text drawn an an angle is drawn with letters upright. If you
+see this, increase the font size of the text.
+
+3. INSTALLATION PROBLEMS
+
+3.a missing modules
+
+In order to run Circos you may need to install some modules from CPAN (www.cpan.org). You 
+will need the modules listed here
+
+  http://mkweb.bcgsc.ca/circos/?requirements
+
+If you run Circos and get a message like
+
+Can't locate Config/General.pm in @INC (@INC contains: /usr/lib/perl5/5.8.0/i386-linux
+-thread-multi /usr/lib/perl5/5.8.0 /usr/lib/perl5/site_perl/5.8.0/i386-linux-thread-mu
+lti /usr/lib/perl5/site_perl/5.8.0 /usr/lib/perl5/site_perl /usr/lib/perl5/vendor_perl
+/5.8.0/i386-linux-thread-multi /usr/lib/perl5/vendor_perl/5.8.0 /usr/lib/perl5/vendor_
+perl .) at ./bin/circos line 121.
+
+then you do not have a module installed. It may be that you have the module elsewhere,
+but Perl cannot find it. In this case, the error message is barking at the fact that
+Config::General is not installed.
+
+You can install the module using CPAN (if CPAN module is installed)
+
+> perl -MCPAN -e shell
+% install Config::General
+
+Make sure that you are using the same perl binary to install the module as for Circos.
+
+Alternatively, you can grab the module from CPAN directly. Use search.cpan.org to find
+the module.
+
+> wget http://search.cpan.org/~tlinden/Config-General-2.31/General.pm
+> tar xvfz Config-General-x.xx.tgz
+> cd Config-General-x.xx.tgz
+> perl Makefile.PL ; make ; make test
+> make install
+
+4. OTHER ISSUES
+
+4.a configuration paths
+
+If you look inside one of the configuration files you'll find
+that it includes other configuration files using <<include>> and
+makes relative mention of data files, such as
+
+  file = data/5/segdup.txt
+
+Circos tries to find the file regardless where you are running the binary from, but 
+may still run into trouble finding files specified using a relative path.
+
+To avoid problems, run circos from its distribution directory
+
+> cd circos-x.xxx
+> bin/circos -conf ...
+
+Alternative, change all the paths in the .conf file to absolute paths. For example, from
+
+  <<include etc/colors.conf>>
+
+to
+
+  <<include /path/to/your/install/circos-x.xx/etc/colors.conf>>
+
+4.b typical errors and how to fix them
+
+4.b.1 numerical parameter units
+
+Many numerical parameters in the .conf files require that you specify
+a unit. For a given parameter, one or more of these units may be required
+
+  p - absolute size in pixels
+  r - relative size, with the comparator being context sensitive 
+      e.g. relative tick size is relative to ideogram thickness
+      e.g. relative tick label offset is relative to tick size
+  u - chromosome units, as defined by chromosomes_unit
+  b - bases, the natural unit along the ideogram
+  n - no unit, explicitly stated
+
+If you receive an error message of the kind
+
+The parameter [ideogram/spacing/break_style/thickness] value [0.25] does not have 
+    the correct unit [saw n], which should be one of r,p at bin/circos line 3410
+    main::unit_validate(0.25, 'ideogram/spacing/break_style/thickness', 'r', 'p') called atbin/circos line 3559
+    main::draw_axis_break('HASH(0x8a81d10)') called at bin/circos line 872
+
+Then you have the wrong unit. Here the parameter at fault is 
+
+  ideogram/spacing/break_style/thickness
+
+that is
+
+  <ideogram>
+   <spacing>
+    <break_style>
+     thickness = 
+
+It is defined to be 0.25 (no unit) but requires that it have a unit of
+either "r" (relative) or "p" (absolute).
+
+As Circos matures, and the configuration file syntax stabilizes, I am
+striving to standardize the requirement for units for all
+parameters. Previous versions were more tolerant and attempted to
+naively determine the unit automatically (e.g. if value was <1 then
+the unit was assumed relative) and you may find that after upgrading
+to a new version of Circos your old files are creating errors. Just
+add the units and you're good to go.
+

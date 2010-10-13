@@ -1,0 +1,10 @@
+#!/bin/bash
+
+in=data/dog.vs.human.subset.txt
+out=data/dog.vs.human.subset.filtered.txt
+
+echo "Processing $in"
+
+bin/filterlinks -links $in > $out
+
+echo "Now look in $out"

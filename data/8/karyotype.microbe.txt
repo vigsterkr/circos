@@ -1,0 +1,17 @@
+chr - chr1 1 0 1000000 black
+band chr1 1.1 1.1 0 15000 red
+band chr1 1.1 1.1 15000 100000 black
+band chr1 1.1 1.1 100000 200000 black
+band chr1 1.1 1.1 200000 300000 white
+band chr1 1.1 1.1 300000 330000 grey
+band chr1 1.1 1.1 330000 350000 red
+band chr1 1.1 1.1 350000 400000 grey
+band chr1 1.1 1.1 400000 500000 black
+band chr1 1.1 1.1 500000 600000 white
+band chr1 1.1 1.1 600000 630000 grey
+band chr1 1.1 1.1 630000 660000 red
+band chr1 1.1 1.1 660000 700000 grey
+band chr1 1.1 1.1 700000 800000 black
+band chr1 1.1 1.1 800000 900000 white
+band chr1 1.1 1.1 900000 985000 grey
+band chr1 1.1 1.1 985000 1000000 red

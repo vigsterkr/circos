@@ -1,0 +1,30 @@
+#!/home/martink/bin/perl
+
+use strict;
+$\ = "\n";
+
+print q{<?xml version="1.0" standalone="no"?>};
+print q{<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">};
+print q{<svg width="1500px" height="1500px" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">};
+
+print q{<defs>};
+print q{<font-face font-family="frutiger;">};
+print q{<font-face-src>};
+print q{<font-face-uri xlink:href="http://mkweb.bcgsc.ca/tmp/frutiger55.svg#frutiger"/>};
+print q{</font-face-src>};
+print q{</font-face>};
+print q{</defs>};
+
+my $angles = 12;
+my $y = 100;
+my $x = 20;
+my $size = 12;
+for my $i ( 0 .. $angles-1 ) {
+    my $angle = $i * 360 / $angles;
+    print qq{<text x="$x" y="$y" style="font-size: $size; font-family: frutiger;" transform="rotate($angle,$x,$y)">rotation_$angle</text>};
+    print sprintf(qq{<line x1="%d" y1="%d" x2="%d" y2="%d" style="stroke: red; stroke-width: 1;" />},$x-10,$y,$x+10,$y);
+    print sprintf(qq{<line x1="%d" y1="%d" x2="%d" y2="%d" style="stroke: red; stroke-width: 1;" />},$x,$y-10,$x,$y+10);
+    print sprintf(qq{<rect x="%d" y="%d" width="%d" height="%d" style="stroke: blue; stroke-width: 1; fill: none;" />},$x,$y-$size,50,$size);
+    $x += 100;
+}
+print q{</svg>};

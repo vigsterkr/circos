@@ -1,0 +1,4 @@
+hs2 0 30000000 fill_color=blue
+hs2 50000000 80000000 fill_color=red
+hs2 100000000 130000000 fill_color=green
+hs2 150000000 180000000 fill_color=orange

@@ -1,0 +1,41 @@
+#!/home/martink/bin/perl
+
+use strict;
+use Math::Random qw(random_normal);
+use Math::VecStat qw(max min);
+
+my $n = 400;
+my $G = 1_000_000;
+my $chr_prefix = "chr";
+
+my $avg = $G/750;
+
+my @h;
+for my $i (1..$n) {
+    my $start = int(rand($G));
+    my $size;
+    do {
+	$size  = random_normal(1,$avg,$avg);
+    } while $size < 0;
+    my $end   = $start + $size -1;
+    push @h, {start=>$start,
+	      end=>$end,
+	      size=>$size};
+}
+my $max_size = max ( map { $_->{size} } @h );
+
+for my $h (@h) {
+    my $color_num = int(24*$h->{size}/$max_size);
+    my $k = $h->{size} / $max_size;
+    my $z = int(100 - 100*$k);
+    my $r0 = 0.2 + (1-$k)*0.75;
+    my $r1 = $r0 + 0.05;
+    printf("%s1 %d %d fill_color=chr%d,z=%d,r0=%fr,r1=%fr\n",
+	   $chr_prefix,
+	   @{$h}{qw(start end)},
+	   $color_num,$z,
+	   $r0,$r1,
+	   );
+}
+
+

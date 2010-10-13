@@ -1,0 +1,573 @@
+<HTML>
+<HEAD>
+<TITLE>filterlinks - filter the link file based on link parameters</TITLE>
+<LINK REV="made" HREF="mailto:root@gene0.cigenomics.bc.ca">
+</HEAD>
+
+<BODY>
+
+<!-- INDEX BEGIN -->
+
+<UL>
+
+	<LI><A HREF="#NAME">NAME</A>
+	<LI><A HREF="#SYNOPSIS">SYNOPSIS</A>
+	<LI><A HREF="#DESCRIPTION">DESCRIPTION</A>
+	<LI><A HREF="#RULES">RULES</A>
+	<UL>
+
+		<LI><A HREF="#Link_Parameters">Link Parameters</A>
+		<LI><A HREF="#Conditions">Conditions</A>
+	</UL>
+
+	<LI><A HREF="#EXAMPLES">EXAMPLES</A>
+	<UL>
+
+		<LI><A HREF="#Filtering_by_Chromosomes">Filtering by Chromosomes</A>
+		<LI><A HREF="#Filtering_by_Position">Filtering by Position</A>
+		<LI><A HREF="#Filtering_by_Link_Options">Filtering by Link Options</A>
+		<LI><A HREF="#Mixing_Conditions_and_IDs">Mixing Conditions and IDs</A>
+	</UL>
+
+	<LI><A HREF="#HISTORY">HISTORY</A>
+	<LI><A HREF="#BUGS">BUGS</A>
+	<LI><A HREF="#AUTHOR">AUTHOR</A>
+	<LI><A HREF="#CONTACT">CONTACT</A>
+</UL>
+<!-- INDEX END -->
+
+<HR>
+<P>
+<HR>
+<H1><A NAME="NAME">NAME</A></H1>
+<P>
+filterlinks - filter the link file based on link parameters
+
+<P>
+<HR>
+<H1><A NAME="SYNOPSIS">SYNOPSIS</A></H1>
+<P>
+<PRE>  filterlinks -links linkfile.txt [-nointer] [-nointra] [-debug]
+</PRE>
+<P>
+<HR>
+<H1><A NAME="DESCRIPTION">DESCRIPTION</A></H1>
+<P>
+<HR>
+<H1><A NAME="RULES">RULES</A></H1>
+<P>
+A filter rules contains two parts: the link parameter which is tested and a
+list of acceptable conditions.
+
+<P>
+The two exceptions are the -nointer and -nointra flags. These can be used
+to filter out inter-chromosomal links (ends of link are on different
+chromosomes) and intra-chromosomal links (ends of link are on the same
+chromosome). These two rules are strict, meaning that if a link does not
+pass them, no other rules are tested and the link is immediately rejected.
+
+<P>
+<HR>
+<H2><A NAME="Link_Parameters">Link Parameters</A></H2>
+<P>
+<PRE>  link_param = condition1,condition2,...
+</PRE>
+<P>
+Because each link has two ends, each link parameter may give rise to three
+distinct rules
+
+<P>
+<PRE>  link_param   = condition1,condition2,...
+  link_param_1 = condition1,condition2,...
+  link_param_2 = condition1,condition2,...
+</PRE>
+<P>
+which test, respectively, both ends with the condition (both ends must
+pass), the first end, and the second end. The first end of the link
+corresponds to the first line of the link line pair. For example, given the
+link ... link018136 cf12 9800000 9900000 link018136 hs6 37914056 37916509
+...
+
+<P>
+the first end is cf12:9800000-9900000 and the second end is
+hs6:37914056-37916509.
+
+<UL>
+<LI><STRONG><A NAME="item_chr">chr</A></STRONG>
+<P>
+Applies the condition to the chromosome of the link.
+
+<P>
+<PRE>  chr   = 1
+  chr_2 = x
+</PRE>
+<LI><STRONG><A NAME="item_start">start, end, size</A></STRONG>
+<P>
+Applies the condition to the start, end or size of the link. The link size
+is end-start+1.
+
+<P>
+<PRE>  start = [?&lt;]10000000
+  end   = [?&gt;]50000000
+</PRE>
+<LI><STRONG><A NAME="item_span">span</A></STRONG>
+<P>
+Applies the condition to the span of the link and should be used with the
+``s'' condition TYPE.
+
+<P>
+<PRE>  span = [?i]1000-2000
+</PRE>
+<LI><STRONG><A NAME="item_id">id</A></STRONG>
+<P>
+Applies the condition to the id of the link.
+
+<LI><STRONG><A NAME="item_color">color, thickness, z, etc.</A></STRONG>
+<P>
+Any condition that is not one of id, chr, start, end, size, span is assumed
+to be a link option and is applied to the option of the link. For example,
+options include color, thickness, and z.
+
+<P>
+<PRE>  color = [?e]chr12
+  z = [?&gt;]10
+</PRE>
+</UL>
+<P>
+<HR>
+<H2><A NAME="Conditions">Conditions</A></H2>
+<P>
+A condition has the following format
+
+<P>
+<PRE>  { [?TYPE {ID} {!} ] } CONDITION
+</PRE>
+<P>
+where elements in { } are optional. Briefly, TYPE is used to indicate how
+the CONDITION text should be applied (e.g. regular expression, integer
+range, exact match, etc). The ID is used to combine rules so that their
+match status is AND'ed together to determine whether the link passes. The
+trailing ``!'' is used to negate the rule (i.e. for the link to pass, the
+rule must fail).
+
+<UL>
+<LI><STRONG><A NAME="item_Default">Default Condition is a Regular Expression</A></STRONG>
+<P>
+If no optional elements in the condition are specified, it is treated as a
+regular expression. For example,
+
+<P>
+<PRE>  LINK_PARAM = 12
+</PRE>
+<P>
+would apply the regular expression ``12'' to the link parameter. You can
+provide a list of conditions with ;; as a delimiter (you can adjust the
+delimiter in the configuration file).
+
+<P>
+<PRE>  LINK_PARAM = 12;;x;;y
+</PRE>
+<P>
+which are interpreted as a series of regular expressions used to test the
+link parameter. The link will be passed if ANY condition matches (i.e.
+match results are OR'ed). If you want match results to be AND'ed (i.e.
+multiple rules must match for the link to pass, read below).
+
+<P>
+The regular expression is case-insensitive.
+
+<LI><STRONG><A NAME="item_Adjusting">Adjusting Condition Type</A></STRONG>
+<P>
+The following conditions types are possible
+
+<UL>
+<LI><STRONG><A NAME="item_r">r - regular expression (default)</A></STRONG>
+<P>
+<PRE>  LINK_PARAM = 12
+  LINK_PARAM = 12;;x;;y
+</PRE>
+<P>
+You can specify the type as a regular expression explicitly with [?r] but
+this is not necessary because that is the default.
+
+<P>
+<PRE>  LINK_PARAM = [?r]12;;[?r]x;;[?r]y
+</PRE>
+<LI><STRONG><A NAME="item_s">s - integer span</A></STRONG>
+<P>
+The syntax of the integer range is any string supported by Set::IntSpan.
+
+<P>
+<PRE>  LINK_PARAM = [?s]1000-2000
+  LINK_PARAM = [?s]1000-2000,3000-4000
+  LINK_PARAM = [?s]1000-2000,3000-)
+  LINK_PARAM = [?s](-1000,2000,3000-)
+  LINK_PARAM = [?s](-1000,2000,3000-4000,5000-)
+</PRE>
+<LI><STRONG><A NAME="item_e">e - exact match</A></STRONG>
+<P>
+The exact match is useful for matching chromosome names in cases where
+regular expressions might match other chromosomes (and you don't want to
+include anchors in your regular expression).
+
+<P>
+<PRE>  LINK_PARAM = [?e]chr1
+  LINK_PARAM = [?e]chr1;;[?e]chr2
+</PRE>
+<P>
+Note that the condition type must be prefixed to each individual condition,
+if a list of conditions is supplied.
+
+<P>
+The exact match is not case-sensitive.
+
+<LI><STRONG><A NAME="item__less_than">&lt; - less than</A></STRONG>
+<P>
+If the value is a number, numerical &lt; is used, otherwise the values are
+compared based on asciibetic order (e.g. le).
+
+<P>
+<PRE>  # LINK_PARAM must be less than 100
+  LINK_PARAM = [?&lt;]100
+</PRE>
+<P>
+<PRE>  # LINK_PARAM must be less (in the asciibetic sense) than chr20 (e.g. chr1, chr11, chr111, chr19, etc)
+  LINK_PARAM = [?&lt;]chr20
+</PRE>
+<LI><STRONG><A NAME="item__greater_than">&gt; - greater than</A></STRONG>
+<P>
+Works just like the less than condition [?&lt;].
+
+<LI><STRONG><A NAME="item_mixing">mixing condition types</A></STRONG>
+<P>
+You can have multiple condition types for a parameter. Remember that
+results of each condition will be OR'ed together.
+
+<P>
+<PRE>  LINK_PARAM = 1,[?e]chr5,[?e]chr22
+</PRE>
+<P>
+The first condition is a regular expression (by default). The second and
+third conditions are exact text matches for chr5 and chr22. Thus, the
+LINK_PARAM will pass if (a) it contains a ``1'', or (b) it is ``chr5'' or
+(c) it is ``chr22''.
+
+</UL>
+<LI><STRONG><A NAME="item_Negating">Negating a Condition</A></STRONG>
+<P>
+In order to negate a condition, use ``!''. When ``!'' is used, the
+condition must fail for the result to be acceptable.
+
+<P>
+<PRE>  # must not match regular expression &quot;1&quot;
+  LINK_PARAM = [?r!]1
+</PRE>
+<P>
+<PRE>  # must not be &quot;chr12&quot;
+  LINK_PARAM = [?e!]chr12
+</PRE>
+<P>
+<PRE>  # must not be within the range 1000-2000
+  LINK_PARAM = [?i!]1000-2000
+</PRE>
+<P>
+In order to combine negated conditions with positive ones, you will need to
+group conditions so that their results are AND'ed.
+
+<LI><STRONG><A NAME="item_Grouping">Grouping Conditions</A></STRONG>
+<P>
+So far, all condition results were evaluated with OR. In other words, if
+you had a list of conditions, the successful pass of any of the conditions
+resulted in the link being passed. This is useful if you want to accept
+multiple values 
+
+<P>
+<PRE>  # chr12 or chr14 
+  LINK_PARAM = [?e]chr12;;[?e]chr14
+</PRE>
+<P>
+However, what if you wanted to match regular expression ``1'' but not
+chr14. Here's where the ID field comes in. By tagging multiple conditions
+with the same ID field the results of each of these conditions is AND'ed
+together to determine whether the link passes.
+
+<P>
+<PRE>  # ID=0 
+  # match regular expression &quot;1&quot; AND not be &quot;chr14&quot;
+  LINK_PARAM = [?r0]1;;[?e0!]chr14
+</PRE>
+</UL>
+<P>
+<HR>
+<H1><A NAME="EXAMPLES">EXAMPLES</A></H1>
+<P>
+Below are some examples to get you started. Note the interplay between
+conditions with IDs and condition without IDs. The former collate
+conditions into AND'ed sets, which are then in turn OR'ed with other sets
+and with conditions without IDs.
+
+<P>
+<HR>
+<H2><A NAME="Filtering_by_Chromosomes">Filtering by Chromosomes</A></H2>
+<P>
+To select links in which both ends match regular expression ``1''
+
+<P>
+<PRE>  chr = 1
+</PRE>
+<P>
+So simple. Now, to select links in with either ends matches regular
+expression ``1'', 
+
+<P>
+<PRE>  chr_1 = 1
+  chr_2 = 1
+</PRE>
+<P>
+The difference between these two cases is that in the first instance, since
+the link_parameter does not include a _1 or _2 suffix, the condition is
+applied to both ends of the link and both ends must pass. In the second
+case, each end is tested independently and the results are OR'ed together.
+
+<P>
+If you want links where the first chromosome matches x or the second
+matches y,
+
+<P>
+<PRE>  chr_1 = x
+  chr_2 = y
+</PRE>
+<P>
+The test is (chr_1 match ``x'') OR (chr_2 match ``y''). Note, however, that
+this set of rules requires that the first chromosome match ``x'' OR the
+second chromosome match ``y''. It will fail if the first chromosome matches
+``y'' and the second matches ``x''. To match both possibilities, you might
+try
+
+<P>
+<PRE>  chr_1 = x;;y
+  chr_2 = y;;x
+</PRE>
+<P>
+In this case the test is (chr_1 match ``x'') OR (chr_1 match ``y'') OR
+(chr_2 match ``x'') OR (chr_2 match ``y''). 
+
+<P>
+If you are looking for links between x and y chromosomes, then you require
+the results of each condition to be AND'ed. For this, use IDs
+
+<P>
+<PRE>  chr_1 = [?r1]x
+  chr_2 = [?r1]y
+</PRE>
+<P>
+Both of these rules have ID=1 and are therefore grouped into a set. Match
+results within a set are AND'ed. Thus, the test is (chr_1 match ``x'') AND
+(chr_2 match ``y''). If you want to match the other order too,
+
+<P>
+<PRE>  chr_1 = [?r1]x;;[?r2]y
+  chr_2 = [?r1]y;;[?r2]x
+</PRE>
+<P>
+In this example, there are two IDs. The rules with ID=0 match chr1 to ``x''
+and chr2 to ``y'' and the rules with ID=1 match the converse (chr1 to ``y''
+and chr2 to ``x''). 
+
+<P>
+Now let's suppose we want links that are either cf1-hs6, cf14-hs7 or
+cfx-hsx. Here cf is a dog chromosome and hs is a human chromosome. The rule
+for this is
+
+<P>
+<PRE>  chr_1 = [?e1]cf1;;[?e2]cf14;;[?e3]cfx
+  chr_2 = [?e1]hs6;;[?e2]hs7;;[?e3]hsx
+</PRE>
+<P>
+You can add additional conditions without IDs to accept more links. For
+example, if you also wanted to add any links for which chr_1 was cf9 or for
+which chr_2 matched ``3''
+
+<P>
+<PRE>  chr_1 = [?e1]cf1;;[?e2]cf14;;[?e3]cfx;;[?e]cf9
+  chr_2 = [?e1]hs6;;[?e2]hs7;;[?e3]hsx;;3
+</PRE>
+<P>
+Remember that [?r]3 is the same as 3, since the default condition type is a
+regular expression.
+
+<P>
+You can take advantage of the ``!'' flag to negate rules to avoid
+chromosomes. For example, if you want links between cfx and any chromosome
+other than hsx
+
+<P>
+<PRE>  chr_1 = [?e1]cfx
+  chr_2 = [?e1!]hsx
+</PRE>
+<P>
+and here the test is (chr_1 is cfx) AND (chr_2 is not hsx). 
+
+<P>
+You can combine chr with chr_1/chr_2 rules
+
+<P>
+<PRE>  chr   = 2
+  chr_1 = [?e1]cfx
+  chr_2 = [?e1!]hsx
+</PRE>
+<P>
+to produce the test ( (chr_1 is cfx) AND (chr_2 is not hsx) ) OR ( chr_1
+matches ``2'' AND chr_2 matches ``2'' ). Use ``chr'' as the parameter if
+you want to apply the same condition to both ends of th elink and chr_1 and
+chr_2 to apply different conditions.
+
+<P>
+<HR>
+<H2><A NAME="Filtering_by_Position">Filtering by Position</A></H2>
+<P>
+To test link position, use the parameters ``start'', ``end'' and ``span''.
+Both ``start'' and ``end'' are ideal for testing with condition type &lt;
+and &gt;. To select links for which both ends start before 10,000,000
+
+<P>
+<PRE>  start = [?&lt;]1e7
+  # or
+  start = [?&lt;]10000000
+</PRE>
+<P>
+to add another OR'ed condition to pass links with start values beyond
+100,000,000
+
+<P>
+<PRE>  start = [?&lt;]1e7;;[?&gt;]1e8
+</PRE>
+<P>
+A more complex test for the ``start'' and ``end'' values can be leveled by
+using the ``s'' condition type, which tests for membership within a span.
+This rule
+
+<P>
+<PRE>  start = [?i]1e6-2e6,3e6-4e6
+</PRE>
+<P>
+will pass links for which both ends are within 1-2Mb or 3-4Mb. Note that
+the ``,'' in this condition is part of the span and does not create a new
+condition. To have two conditions, use the ;; delimiter.
+
+<P>
+<PRE>  start = [?i]1e6-2e6,3e6-4e6;;[?s]1e7-1.1e7,3e6-4e6
+</PRE>
+<P>
+When using the ``span'' parameter, you should always use the ``s''
+condition type. This will check whether the link span intersects the
+provided span.
+
+<P>
+<PRE>  span = [?s]2e7-5e7
+</PRE>
+<P>
+This will select all links whose spans (at both ends) intersect the
+coordinates 20-50Mb. To be more selective, use the _1 and _2 suffixes.
+
+<P>
+<PRE>  span_1 = [?s1]2e7-5e7
+  span_2 = [?s1]2e7-2.5e7
+</PRE>
+<P>
+will select links joining 20-50Mb regions to 20-25Mb regions. An ID was
+required here to make the results AND'ed. To avoid certain regions, use the
+``!'' flag
+
+<P>
+<PRE>  span = [?s!](-1e7
+</PRE>
+<P>
+will avoid all links within the first 10Mb.
+
+<P>
+<HR>
+<H2><A NAME="Filtering_by_Link_Options">Filtering by Link Options</A></H2>
+<P>
+Any link option such as ``color'', ``thickness'', or ``z'' can be tested in
+similar rules. 
+
+<P>
+<PRE>  # links with z value greater than 10
+  z = [?&gt;]10 
+</PRE>
+<P>
+<PRE>  # links with z value between 5 and 15
+  z = [?s]5-15
+</PRE>
+<P>
+<HR>
+<H2><A NAME="Mixing_Conditions_and_IDs">Mixing Conditions and IDs</A></H2>
+<P>
+You can write fairly complex rules by combining different link parameter,
+rule types and IDs.
+
+<P>
+For example to apply the following filter
+
+<P>
+<PRE>  (
+  between (hs1 and cf6) 
+  AND
+  within 75-80 Mb on hs1
+  AND 
+  larger than 5kb on hs1
+  )
+</PRE>
+<P>
+<PRE>  OR
+</PRE>
+<P>
+<PRE>  (
+  larger than 500kb on hs1
+  )
+</PRE>
+<P>
+use the following rules
+
+<P>
+<PRE>  chr_1   = [?e1]cf6
+  chr_2   = [?e1]hs1
+  span_2  = [?s1]75e6-80e6
+  size_2  = [?&gt;1]5e3;;[?&gt;]500e3
+</PRE>
+<P>
+<HR>
+<H1><A NAME="HISTORY">HISTORY</A></H1>
+<UL>
+<LI><STRONG><A NAME="item_23">23 July 2008</A></STRONG>
+<P>
+Reworked rules and conditions to include TYPE and ID.
+
+<LI><STRONG><A NAME="item_9">9 July 2008</A></STRONG>
+<P>
+Started and versioned.
+
+</UL>
+<P>
+<HR>
+<H1><A NAME="BUGS">BUGS</A></H1>
+<P>
+<HR>
+<H1><A NAME="AUTHOR">AUTHOR</A></H1>
+<P>
+Martin Krzywinski
+
+<P>
+<HR>
+<H1><A NAME="CONTACT">CONTACT</A></H1>
+<P>
+<PRE>  Martin Krzywinski
+  Genome Sciences Centre
+  Vancouver BC Canada
+  www.bcgsc.ca
+  martink@bcgsc.ca
+</PRE>
+</BODY>
+
+</HTML>
