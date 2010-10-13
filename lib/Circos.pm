@@ -1,6 +1,6 @@
 package Circos;
 
-our $VERSION = '0.52';
+our $VERSION = '0.52-1';
 
 =pod
 
@@ -40,7 +40,7 @@ another image, call run again with different options.
 
 =head1 VERSION
 
-Version 0.52.
+Version 0.52-1.
 
 =head1 FUNCTIONS/METHODS
 
@@ -1834,6 +1834,7 @@ or a hashref of the configuration options.
 												      )
 						    );
 
+	  print "angular resolution is [$angular_resolution]\n";
 	  printdebug(
 		     sprintf(
 			     "label %s size %.1f w %d h %d rp %.1f a %.2f r %d ah %.3f %.3f asi %.2f %.2f aso %.2f %.2f",
@@ -6013,6 +6014,8 @@ sub draw_ticks {
 	  # actual tick is not drawn (but the loop is used to generate
 	  # the image map element).
 	  $do_not_draw = $pos_ticked{$tick_radius}{$pos}++;
+	  #printinfo("do_not_draw",$chr,$mb_pos,$tick_radius,$tickdata->{spacing},$do_not_draw);
+	  #printdumper(\%pos_ticked);
 	  #next if $do_not_draw && ! $tickdata->{url};
 	}
 
@@ -6165,6 +6168,7 @@ sub draw_ticks {
 	if ( $CONF{show_tick_labels}
 	     && seek_parameter( "show_label", $tickdata, $CONF{ticks} )
 	     && $edge_d_min >= $DIMS->{tick}{$dims_key}{min_label_distance_to_edge} ) {
+	  #printinfo("drawing labels",$chr); ###
 	  my $tick_label;
 	  my $multiplier  = unit_parse(seek_parameter("multiplier|label_multiplier", $tickdata, $CONF{ticks} ) ) || 1;
 	  my $rmultiplier = unit_parse(seek_parameter("rmultiplier|label_rmultiplier", $tickdata, $CONF{ticks})) || 1;
@@ -6250,10 +6254,44 @@ sub draw_ticks {
 	    textoffset( getanglepos( $pos, $chr ),
 			$tick_label_radius, $label_width, $label_height );
 
+	  my $text_angle = $DEG2RAD * textangle($tick_angle);
+
+
+	  # v0.52-1
+	  # ticks support label_rotate setting. If set to "no" the labels
+	  # are horizontal. The exact radius offset was defined heuristically,
+	  # see ~/work/circos/projects/user.debug/labels.norotate
+	  if (defined seek_parameter( "label_rotate", $tickdata,$CONF{ticks}) 
+	      && !seek_parameter( "label_rotate", $tickdata,$CONF{ticks})) {
+	    $offset_angle = 0;
+	    $offset_radius = 0;
+	    $text_angle = 0;
+	    ( $offset_angle, $offset_radius ) =
+	      textoffset( getanglepos( $pos, $chr ),
+			  $tick_label_radius, 2*$label_width / length($tick_label), $label_height );
+	    if($tick_angle < 90) {
+	      # 1 at -90
+	      # 0 at 90
+	      my $f = 1-abs($tick_angle - 90)/180;
+	      $offset_radius = $label_height * $f;
+	    } else {
+	      # 1 at 90
+	      # 0 at 270
+	      my $f = abs(270 - $tick_angle)/180;
+	      #$f = 1 - $f if $f > 0.5;
+	      $offset_radius = $label_height * $f;
+	      $f = 1 - abs(180 - $tick_angle)/90;
+	      $offset_radius += ($label_height + $label_width/length($tick_label)/3) * $f;
+	    }
+	    printinfo("radius",$offset_radius,"angle",$tick_angle);
+	    $tick_label = int($offset_radius);
+	  }
+
 	  debug_or_group("ticks") && printdebug(
 						"ticklabel",
 						$tick_label,
 						"tickpos",
+						$chr,
 						$pos,
 						"angle",
 						$tick_angle + $offset_angle,
@@ -6277,7 +6315,7 @@ sub draw_ticks {
 					    size   => $label_size,
 					    pangle => $tick_angle, # + $offset_angle,
 					    radius => $tick_label_radius + $offset_radius,
-					    angle  => $DEG2RAD * textangle($tick_angle),
+					    angle  => $text_angle,
 					    xy     => [getxypos($tick_angle + $offset_angle,
 								$tick_label_radius + $offset_radius)],
 					    svgxy => [getxypos($tick_angle + $offset_angle / $CONF{svg_font_scale},
@@ -6325,9 +6363,11 @@ sub draw_ticks {
       next unless @tick_with_label;
       my $label_color;
       if(seek_parameter("skip_first_label",$tick_with_label[0]{tickdata},$CONF{ticks})) {
+	#printinfo("ticklabel","skip_first");
 	$tick_with_label[0]{labeldata}{do_not_draw} = 1;
       }
       if(seek_parameter("skip_last_label",$tick_with_label[-1]{tickdata},$CONF{ticks})) {
+	#printinfo("ticklabel","skip_last");
 	$tick_with_label[-1]{labeldata}{do_not_draw} = 1;
       }
 
@@ -6335,20 +6375,34 @@ sub draw_ticks {
 	$sep = unit_strip(unit_validate($sep, "ticks/label_separation", "p"));
 	if($sep) {
 	  for my $tick_idx (0..@tick_with_label-1) {
+	    my $thistick = $tick_with_label[$tick_idx]{labeldata};
 	    my $prev_check = $tick_idx ? 
-	      $tick_with_label[$tick_idx]{labeldata}{start_a}-$tick_with_label[$tick_idx-1]{labeldata}{end_a}
+	      span_distance(@{$tick_with_label[$tick_idx]{labeldata}}{qw(start_a end_a)},
+			    @{$tick_with_label[$tick_idx-1]{labeldata}}{qw(start_a end_a)})
 		: undef;
 	    my $next_check = $tick_idx < @tick_with_label-1 ?
-	      $tick_with_label[$tick_idx+1]{labeldata}{start_a}-$tick_with_label[$tick_idx]{labeldata}{end_a}
+	      span_distance(@{$tick_with_label[$tick_idx]{labeldata}}{qw(start_a end_a)},
+			    @{$tick_with_label[$tick_idx+1]{labeldata}}{qw(start_a end_a)})
 		: undef;
-	    if( ( ! defined $prev_check || $prev_check >= $sep)
+	    #my $prev_check = $tick_idx ? 
+	    #  $tick_with_label[$tick_idx]{labeldata}{start_a}-$tick_with_label[$tick_idx-1]{labeldata}{end_a}
+	    #	: undef;
+	    #    my $next_check = $tick_idx < @tick_with_label-1 ?
+	    #      $tick_with_label[$tick_idx+1]{labeldata}{start_a}-$tick_with_label[$tick_idx]{labeldata}{end_a}
+	    #	: undef;
+	    if( ( ! defined $prev_check || abs($prev_check) >= $sep)
 		&&
-		( ! defined $next_check || $next_check >= $sep) ) {
+		( ! defined $next_check || abs($next_check) >= $sep) ) {
 	      # tick label is sufficiently far from neighbours
 	    } else {
 	      $tick_with_label[$tick_idx]{labeldata}{do_not_draw} = 1;
 	      $tick_with_label[$tick_idx]{labeldata}{color}       = "red";
 	    }
+	    #printinfo("ticklabel","label_separation",$chr,
+	    #	      $thistick->{text},
+	    #	      $thistick->{do_not_draw} ? "HIDE" : "SHOW",
+	    #	      sprintf("start %.1f end %.1f",$thistick->{start_a},$thistick->{end_a}),
+	    #	      sprintf("prev %.1f next %.1f",$prev_check,$next_check),"sep",$sep);
 	  }
 	}
       }
@@ -6465,6 +6519,7 @@ sub draw_ticks {
 	       );
     }
     if ( $tick->{labeldata} ) {
+      #printinfo("ticklabel",$chr,@{$tick->{labeldata}}{qw(text start end)},$tick->{labeldata}{do_not_draw});
       next if $tick->{labeldata}{do_not_draw};
       draw_text(
                 image => $IM,
@@ -8302,6 +8357,67 @@ sub getxypos {
 	 );
 }
 
+# return the distance between the span
+# [x1,y1] and [x2,y2]
+# if the spans overlap, the distance is negative
+sub span_distance {
+  my ($x1,$y1,$x2,$y2) = @_;
+  # flip the coordinates if they are reversed
+  ($x1,$y1) = ($y1,$x1) if $x1 > $y1;
+  ($x2,$y2) = ($y2,$x2) if $x2 > $y2;
+  # flip intervals so that x1,y1 is always to the left
+  ($x1,$y1,$x2,$y2) = ($x2,$y2,$x1,$y1) if ($x1 > $x2);
+  my $d;
+  if($x2 >= $y1) {
+    # x1 y1
+    # -----  
+    #        x2  y2
+    #        ------
+    $d = $x2 - $y1;
+  } else {
+    if($y2 >= $y1) {
+      # x1     y1
+      # ---------
+      #     x2    y2
+      #     --------
+      $d = -($y1 - $x2);
+    } else {
+      # x1     y1
+      # ---------
+      #   x2  y2
+      #   ------
+      $d = -($y2-$x2);
+    }
+  }
+  die "did not calculate distance between intervals [$x1,$y1] and [$x2,$y2] correctly." unless defined $d;
+  return $d;
+
+  # test
+  for my $i (0..100000) {
+    my @coords = map { sprintf("%.1f",100*rand()) } (0..3);
+    my $s1 = Set::IntSpan->new(sprintf("%d-%d",sort {$a <=> $b} ($coords[0]*1000,$coords[1]*1000)));
+    my $s2 = Set::IntSpan->new(sprintf("%d-%d",sort {$a <=> $b} ($coords[2]*1000,$coords[3]*1000)));
+    my $int = $s1->intersect($s2)->cardinality;
+    my $d   = span_distance(@coords);
+    if($int) {
+      $int = ($int-1)/1000 if $int;
+      if($int && (-$d - $int) > 0.002) {
+	die();
+      }
+    } else {
+      $int = min ( abs($coords[0] - $coords[2]),
+		   abs($coords[0] - $coords[3]),
+		   abs($coords[1] - $coords[2]),
+		   abs($coords[1] - $coords[3]) );
+      if($d - $int > 0.002) {
+	die();
+      }
+    }
+    printinfo(@coords,$d,$int);
+
+  }
+}
+
 # -------------------------------------------------------------------
 sub getrdistance {
   my ( $pos, $chr, $r ) = @_;
@@ -9005,7 +9121,7 @@ sub loadconfiguration {
     }
   }
 
-  if ( !$file ) {
+  if ( ! $file ) {
     confess "error - could not find the configuration file [$file]";
   }
 
@@ -9016,9 +9132,12 @@ sub loadconfiguration {
 				  -AllowMultiOptions => 1,
 				  -LowerCaseNames    => 1,
 				  -ConfigPath        => [
-							 "$FindBin::RealBin/etc", "$FindBin::RealBin/../etc",
-							 "$FindBin::RealBin/..",  $FindBin::RealBin,
-							 dirname($file),          "$FindBin::RealBin/../" . dirname($file)
+							 "$FindBin::RealBin/etc", 
+							 "$FindBin::RealBin/../etc",
+							 "$FindBin::RealBin/..",  
+							 $FindBin::RealBin,
+							 dirname($file),          
+							 "$FindBin::RealBin/../" . dirname($file)
 							],
 				  -AutoTrue => 1
 				 );
