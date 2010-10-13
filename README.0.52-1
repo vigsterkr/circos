@@ -1,0 +1,13 @@
+
+Tick labels now support 
+
+label_rotate
+
+parameter. By default, this is set to "yes" and tick labels are
+rotated to be perpendicular to the circle. If
+
+label_rotate = no
+
+all tick labels will be horizontal.
+
+No effort is made to prevent label overlap.
