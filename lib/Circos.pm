@@ -1,6 +1,6 @@
 package Circos;
 
-our $VERSION = '0.52';
+our $VERSION = '0.53';
 
 =pod
 
@@ -40,7 +40,7 @@ another image, call run again with different options.
 
 =head1 VERSION
 
-Version 0.52.
+Version 0.53
 
 =head1 FUNCTIONS/METHODS
 
@@ -1592,7 +1592,7 @@ for my $ideogram (@IDEOGRAMS) {
 		} elsif ($rulekey eq "start" || $rulekey eq "end") {
 		    $datum->{data}[0]{data}{ $rulekey } = $value;
 		} else {
-		    printdumper($datum);
+		    #printdumper($datum);
 		    if ( !defined $rule->{overwrite}
 			 || $rule->{overwrite} ) {
 			$datum->{param}{$rulekey} = $value;
@@ -3989,8 +3989,8 @@ for my $ideogram (@IDEOGRAMS) {
 	    my $d = $plot_max - $plot_min;
 	    $color_index = $d ? (@colors-1)*($value-$plot_min)/$d : 0;
 	  }
-
 	  my $color = $colors[$color_index];
+	  #printinfo("heatmap",$value,"min",$plot_min,"max",$plot_max,"ncolors",int(@colors),"cidx",$color_index,"color",$color);
 	  my $url = seek_parameter("url",$data_point,$datum,@param_path);
 	  $url = format_url(url=>$url,param_path=>[{color=>$color},
 						   $data_point,$datum,@param_path]);
@@ -7436,6 +7436,8 @@ sub draw_text {
 
     printdebug( "svgangle", $params{svgangle}, $tanchor );
 
+    my $svg_text = $params{text};
+    $svg_text =~ s/&/&amp;/g;
     my $svg = sprintf(
 		      qq{<text x="%.1f" y="%.1f" style="fill: rgb(%d,%d,%d); font-size: %.1fpx; text-anchor: %s" transform="rotate(%.1f,%.1f,%.1f)">%s</text>},
 		      @{ $params{svgxy} },
@@ -7444,7 +7446,7 @@ sub draw_text {
 		      $tanchor,
 		      $params{svgangle} + $params{forcerotation},
 		      @{ $params{svgxy} },
-		      $params{text}
+		      $svg_text,
 		     );
     printsvg($svg);
   }
@@ -9190,7 +9192,7 @@ Martin Krzywinski E<lt>martink at bcgsc.caE<gt>.
 
 If you are using Circos in a publication, please cite as
 
-Krzywinski, M., J. Schein, I. Birol, J. Connors, R. Gascoyne, D. Horsman, S. Jones, and M. Marra. 2009. Circos: an Information Aesthetic for Comparative Genomics. Genome Res (in press).
+Krzywinski, M., J. Schein, I. Birol, J. Connors, R. Gascoyne, D. Horsman, S. Jones, and M. Marra. 2009. Circos: an Information Aesthetic for Comparative Genomics. Genome Res 19:1639-1645.
 
 =head1 CONTRIBUTORS
 
@@ -9276,7 +9278,7 @@ http://genopix.sourceforget.net
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2004-2009 Martin Krzywinski, all rights reserved.
+Copyright 2004-2011 Martin Krzywinski, all rights reserved.
 
 This file is part of the Genome Sciences Centre Perl code base.
 
