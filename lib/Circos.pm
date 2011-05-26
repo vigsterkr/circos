@@ -1,6 +1,6 @@
 package Circos;
 
-our $VERSION = '0.52-1';
+our $VERSION = '0.52';
 
 =pod
 
@@ -40,7 +40,7 @@ another image, call run again with different options.
 
 =head1 VERSION
 
-Version 0.52-1.
+Version 0.52.
 
 =head1 FUNCTIONS/METHODS
 
@@ -120,7 +120,9 @@ or a hashref of the configuration options.
 
   %OPT = ref $_[0] eq 'HASH' ? %{ $_[0] } : @_;
 
+  printf("debuglib: using configuration input %s\n",$OPT{configfile});
   if ( $OPT{'configfile'} ) {
+    printf("debuglib: loading configuration from file %s\n",$OPT{configfile});
     loadconfiguration( $OPT{'configfile'} );
   } elsif ( $OPT{'config'} ) {
     %CONF = %{ $OPT{'config'} };
@@ -320,7 +322,6 @@ or a hashref of the configuration options.
     my $next = $i < @IDEOGRAMS - 1 ? $IDEOGRAMS[ $i + 1 ] : $IDEOGRAMS[0];
     my $prev = $IDEOGRAMS[ $i - 1 ];
 
-    #print Dumper($this);
     $this->{next} = $next;
     $this->{prev} = $prev;
     if (   $next->{chr} ne $this->{chr}
@@ -331,6 +332,7 @@ or a hashref of the configuration options.
 	   && $this->{set}->min > $KARYOTYPE->{ $this->{chr} }{chr}{set}->min ) {
       $this->{break}{start} = 1;
     }
+    #print Dumper($this);
   }
 
   $CONF{chromosomes_units} = unit_convert(
@@ -669,7 +671,7 @@ or a hashref of the configuration options.
   printsvg(qq{<g id="ideograms">}) if $SVG_MAKE;
 
   for my $ideogram (@IDEOGRAMS) {
-    $ideogram->{set}->cardinality;
+    #$ideogram->{set}->cardinality;
     # TODO - what was the point of this?
     #next if $ideogram->{set}->cardinality < 2; # CHECK THIS
     my $chr = $ideogram->{chr};
@@ -828,16 +830,17 @@ or a hashref of the configuration options.
     }
   }
 
-  for my $ideogram (@IDEOGRAMS) {
+for my $ideogram (@IDEOGRAMS) {
     if ( $ideogram->{chr} eq $ideogram->{next}{chr} || $ideogram->{break}{start} || $ideogram->{break}{end} ) {
-      # v0.52 fixes problem with axis break display when a single
-      # ideogram with a break was shown. The problem is due to the
-      # circular nature of the next/prev list.
-      if($ideogram->{display_idx} < $ideogram->{next}{display_idx}) {
-	draw_axis_break($ideogram);
-      }
+	# v0.52 fixes problem with axis break display when a single
+	# ideogram with a break was shown. The problem is due to the
+	# circular nature of the next/prev list.
+	#printinfo(exists $ideogram->{next}{display_idx});
+	if(@IDEOGRAMS > 1 || $ideogram->{display_idx} < $ideogram->{next}{display_idx}) {
+	    draw_axis_break($ideogram);
+	}
     }
-  }
+}
 
   printsvg(qq{</g>}) if $SVG_MAKE;
 
@@ -907,6 +910,7 @@ or a hashref of the configuration options.
 	delete $rule->{restart};
       }
 
+      #printdumper($datum);
     RULES:
       for my $rule ( 
 		    sort { $b->{importance} <=> $a->{importance} }
@@ -932,17 +936,16 @@ or a hashref of the configuration options.
 
 	  for my $rulekey ( keys %$ruleparam ) {
 
-	    #printinfo("rule",$rulekey);
 	    my ( $rulekey_root, $rulekey_number ) =
 	      $rulekey =~ /(.+?)(\d*)$/;
 
-	    #printinfo("rulekey",$rulekey_root,$rulekey_number);
 	    my $value = $ruleparam->{$rulekey};
 	    if ( $value =~ /^eval\(\s*(.*)\s*\)\s*$/ ) {
 	      $value =
 		eval_expression( $datum, $1,
 				 [ $datum, $datum->{data}, @param_path ] );
 	    }
+	    #printinfo("rulekey",$rulekey_root,$rulekey_number,$value);
 
 	    if ( 
 		!defined $rule->{overwrite} || $rule->{overwrite} 
@@ -1568,34 +1571,37 @@ or a hashref of the configuration options.
 	my $flow      = seek_parameter( "flow", $rule, $plot->{rules} );
 	my $pass      = test_rule( $datum, $condition );
 	if ($pass) {
-	  my $ruleparam = parse_parameters( $rule, "plot", 1 );
-	  for my $rulekey ( keys %$ruleparam ) {
-	    my $value = $ruleparam->{$rulekey};
-
-	    if ( $value =~ /^eval\(\s*(.*)\s*\)\s*$/ ) {
-	      $value =
-		eval_expression( $datum, $1,
-				 [ $datum, $datum->{data}, @param_path ] );
-
-	      #printinfo("newvalue",$value);
-	    }
-
-	    if ( $rulekey eq "value" ) {
-	      if ( $type eq "text" ) {
-		$datum->{data}[0]{data}{label} = $value;
-	      } else {
-		$datum->{data}[0]{data}{value} = $value;
-	      }
-	    } else {
-	      if ( !defined $rule->{overwrite}
-		   || $rule->{overwrite} ) {
-		$datum->{param}{$rulekey} = $value;
-	      } elsif ( !exists $datum->{param}{$rulekey} ) {
-		$datum->{param}{$rulekey} = $value;
-	      }
+	    my $ruleparam = parse_parameters( $rule, "plot", 1 );
+	    for my $rulekey ( keys %$ruleparam ) {
+		my $value = $ruleparam->{$rulekey};
+		
+		if ( $value =~ /^eval\(\s*(.*)\s*\)\s*$/ ) {
+		    $value =
+			eval_expression( $datum, $1,
+					 [ $datum, $datum->{data}, @param_path ] );
+		    
+		    #printinfo("newvalue",$value);
+		}
+		
+		if ( $rulekey eq "value" ) {
+		    if ( $type eq "text" ) {
+			$datum->{data}[0]{data}{label} = $value;
+		    } else {
+			$datum->{data}[0]{data}{value} = $value;
+		    }
+		} elsif ($rulekey eq "start" || $rulekey eq "end") {
+		    $datum->{data}[0]{data}{ $rulekey } = $value;
+		} else {
+		    printdumper($datum);
+		    if ( !defined $rule->{overwrite}
+			 || $rule->{overwrite} ) {
+			$datum->{param}{$rulekey} = $value;
+		    } elsif ( !exists $datum->{param}{$rulekey} ) {
+			$datum->{param}{$rulekey} = $value;
+		    }
 	    }
 	  }
-
+	  #printdumper($datum);
 	  last unless $flow eq "continue";
 	}
       }
@@ -1834,7 +1840,6 @@ or a hashref of the configuration options.
 												      )
 						    );
 
-	  print "angular resolution is [$angular_resolution]\n";
 	  printdebug(
 		     sprintf(
 			     "label %s size %.1f w %d h %d rp %.1f a %.2f r %d ah %.3f %.3f asi %.2f %.2f aso %.2f %.2f",
@@ -4183,6 +4188,67 @@ sub fetch_brush {
   return ( $brush, $brush_colors );
 }
 
+# return the distance between the span
+# [x1,y1] and [x2,y2]
+# if the spans overlap, the distance is negative
+sub span_distance {
+  my ($x1,$y1,$x2,$y2) = @_;
+  # flip the coordinates if they are reversed
+  ($x1,$y1) = ($y1,$x1) if $x1 > $y1;
+  ($x2,$y2) = ($y2,$x2) if $x2 > $y2;
+  # flip intervals so that x1,y1 is always to the left
+  ($x1,$y1,$x2,$y2) = ($x2,$y2,$x1,$y1) if ($x1 > $x2);
+  my $d;
+  if($x2 >= $y1) {
+    # x1 y1
+    # -----  
+    #        x2  y2
+    #        ------
+    $d = $x2 - $y1;
+  } else {
+    if($y2 >= $y1) {
+      # x1     y1
+      # ---------
+      #     x2    y2
+      #     --------
+      $d = -($y1 - $x2);
+    } else {
+      # x1     y1
+      # ---------
+      #   x2  y2
+      #   ------
+      $d = -($y2-$x2);
+    }
+  }
+  die "did not calculate distance between intervals [$x1,$y1] and [$x2,$y2] correctly." unless defined $d;
+  return $d;
+
+  # test
+  for my $i (0..100000) {
+    my @coords = map { sprintf("%.1f",100*rand()) } (0..3);
+    my $s1 = Set::IntSpan->new(sprintf("%d-%d",sort {$a <=> $b} ($coords[0]*1000,$coords[1]*1000)));
+    my $s2 = Set::IntSpan->new(sprintf("%d-%d",sort {$a <=> $b} ($coords[2]*1000,$coords[3]*1000)));
+    my $int = $s1->intersect($s2)->cardinality;
+    my $d   = span_distance(@coords);
+    if($int) {
+      $int = ($int-1)/1000 if $int;
+      if($int && (-$d - $int) > 0.002) {
+	die();
+      }
+    } else {
+      $int = min ( abs($coords[0] - $coords[2]),
+		   abs($coords[0] - $coords[3]),
+		   abs($coords[1] - $coords[2]),
+		   abs($coords[1] - $coords[3]) );
+      if($d - $int > 0.002) {
+	die();
+      }
+    }
+    printinfo(@coords,$d,$int);
+
+  }
+}
+
 # -------------------------------------------------------------------
 sub span_from_pair {
   return Set::IntSpan->new( sprintf( "%d-%d", @_ ) );
@@ -4298,11 +4364,13 @@ sub eval_expression {
 	      $datum->{data}[$varnum]{data}{start} ) / 2;
 	  replace_string( \$condition, $string, $value );
 	} else {
+	  printdumper($datum->{data});
 	  confess "You set up a rule [$condition] that uses ",
 	    "parsable field [$string] but the data you are testing ",
 	      "does not have the field [$varroot].";
 	}
       } else {
+	printdumper($datum->{data});
 	confess "You set up a rule [$condition] that uses parsable ",
 	  "field [$string] but the data you are testing does not have ",
 	    "[$varnum] elements.";
@@ -5037,7 +5105,7 @@ sub parse_parameters {
 			    ],
 		    connector => [qw(connector_dims thickness color r0 r1)],
 		    plot      => [
-				  qw(
+				  qw( start end
 				      angle_shift layers_overflow connector_dims extend_bin
 				      label_rotate value scale_log_base layers_overflow_color
 				      offset padding rpadding thickness layers margin max_gap
@@ -5643,6 +5711,7 @@ sub read_data_file {
     next if /^\s*#/;
     next if /^\s*$/;
     my @tok   = $CONF{file_delim} ? split($CONF{file_delim}) : split;
+    my $line = $_;
     my $datum = {};
     my $fail;
     for my $i ( 0 .. @{ $fields->{$type} } - 1 ) {
@@ -5650,8 +5719,9 @@ sub read_data_file {
       next if $field eq $DASH;
       my $value = $tok[$i];
       if ( $rx->{$field} && $value && $value !~ /$rx->{$field}/ ) {
-	warn "data field [$field] value [$value] does not pass ",
-	  "filter [$rx->{$field}]";
+	warn "error reading data of type [$type] from file [$file]";
+	warn "data field [$field] value [$value] does not pass filter [$rx->{$field}]";
+	warn "line was [$line]";
 	$fail = 1;
 	next;
       }
@@ -5987,11 +6057,15 @@ sub draw_ticks {
 	@mb_pos = sort {$a <=> $b} @{ $tickdata->{position} };
       }
 
+      #printinfo("tick positions",@mb_pos);
+
       # go through every position and draw the tick
 
       for my $mb_pos (@mb_pos) {
 	# if the tick is outside the ideogram, it isn't shown
 	next if !$ideogram->{set}->member($mb_pos);
+
+	#printinfo("tick prep",$mb_pos);
 
 	my $pos = $mb_pos;
 	my $do_not_draw;
@@ -6014,8 +6088,6 @@ sub draw_ticks {
 	  # actual tick is not drawn (but the loop is used to generate
 	  # the image map element).
 	  $do_not_draw = $pos_ticked{$tick_radius}{$pos}++;
-	  #printinfo("do_not_draw",$chr,$mb_pos,$tick_radius,$tickdata->{spacing},$do_not_draw);
-	  #printdumper(\%pos_ticked);
 	  #next if $do_not_draw && ! $tickdata->{url};
 	}
 
@@ -6044,6 +6116,8 @@ sub draw_ticks {
 	  }
 	}
 	next if $is_suppressed;
+
+	#printinfo("tick draw",$mb_pos);
 
 	# TODO - fix/handle this - is it necessary?
 	# this is a bit of a hack, but is required because we
@@ -6168,7 +6242,6 @@ sub draw_ticks {
 	if ( $CONF{show_tick_labels}
 	     && seek_parameter( "show_label", $tickdata, $CONF{ticks} )
 	     && $edge_d_min >= $DIMS->{tick}{$dims_key}{min_label_distance_to_edge} ) {
-	  #printinfo("drawing labels",$chr); ###
 	  my $tick_label;
 	  my $multiplier  = unit_parse(seek_parameter("multiplier|label_multiplier", $tickdata, $CONF{ticks} ) ) || 1;
 	  my $rmultiplier = unit_parse(seek_parameter("rmultiplier|label_rmultiplier", $tickdata, $CONF{ticks})) || 1;
@@ -6283,15 +6356,14 @@ sub draw_ticks {
 	      $f = 1 - abs(180 - $tick_angle)/90;
 	      $offset_radius += ($label_height + $label_width/length($tick_label)/3) * $f;
 	    }
-	    printinfo("radius",$offset_radius,"angle",$tick_angle);
-	    $tick_label = int($offset_radius);
+	    #printinfo("radius",$offset_radius,"angle",$tick_angle);
+	    #$tick_label = int($offset_radius);
 	  }
 
 	  debug_or_group("ticks") && printdebug(
 						"ticklabel",
 						$tick_label,
 						"tickpos",
-						$chr,
 						$pos,
 						"angle",
 						$tick_angle + $offset_angle,
@@ -6363,11 +6435,9 @@ sub draw_ticks {
       next unless @tick_with_label;
       my $label_color;
       if(seek_parameter("skip_first_label",$tick_with_label[0]{tickdata},$CONF{ticks})) {
-	#printinfo("ticklabel","skip_first");
 	$tick_with_label[0]{labeldata}{do_not_draw} = 1;
       }
       if(seek_parameter("skip_last_label",$tick_with_label[-1]{tickdata},$CONF{ticks})) {
-	#printinfo("ticklabel","skip_last");
 	$tick_with_label[-1]{labeldata}{do_not_draw} = 1;
       }
 
@@ -6375,7 +6445,6 @@ sub draw_ticks {
 	$sep = unit_strip(unit_validate($sep, "ticks/label_separation", "p"));
 	if($sep) {
 	  for my $tick_idx (0..@tick_with_label-1) {
-	    my $thistick = $tick_with_label[$tick_idx]{labeldata};
 	    my $prev_check = $tick_idx ? 
 	      span_distance(@{$tick_with_label[$tick_idx]{labeldata}}{qw(start_a end_a)},
 			    @{$tick_with_label[$tick_idx-1]{labeldata}}{qw(start_a end_a)})
@@ -6384,25 +6453,14 @@ sub draw_ticks {
 	      span_distance(@{$tick_with_label[$tick_idx]{labeldata}}{qw(start_a end_a)},
 			    @{$tick_with_label[$tick_idx+1]{labeldata}}{qw(start_a end_a)})
 		: undef;
-	    #my $prev_check = $tick_idx ? 
-	    #  $tick_with_label[$tick_idx]{labeldata}{start_a}-$tick_with_label[$tick_idx-1]{labeldata}{end_a}
-	    #	: undef;
-	    #    my $next_check = $tick_idx < @tick_with_label-1 ?
-	    #      $tick_with_label[$tick_idx+1]{labeldata}{start_a}-$tick_with_label[$tick_idx]{labeldata}{end_a}
-	    #	: undef;
-	    if( ( ! defined $prev_check || abs($prev_check) >= $sep)
+	    if( ( ! defined $prev_check || $prev_check >= $sep)
 		&&
-		( ! defined $next_check || abs($next_check) >= $sep) ) {
+		( ! defined $next_check || $next_check >= $sep) ) {
 	      # tick label is sufficiently far from neighbours
 	    } else {
 	      $tick_with_label[$tick_idx]{labeldata}{do_not_draw} = 1;
 	      $tick_with_label[$tick_idx]{labeldata}{color}       = "red";
 	    }
-	    #printinfo("ticklabel","label_separation",$chr,
-	    #	      $thistick->{text},
-	    #	      $thistick->{do_not_draw} ? "HIDE" : "SHOW",
-	    #	      sprintf("start %.1f end %.1f",$thistick->{start_a},$thistick->{end_a}),
-	    #	      sprintf("prev %.1f next %.1f",$prev_check,$next_check),"sep",$sep);
 	  }
 	}
       }
@@ -6519,7 +6577,6 @@ sub draw_ticks {
 	       );
     }
     if ( $tick->{labeldata} ) {
-      #printinfo("ticklabel",$chr,@{$tick->{labeldata}}{qw(text start end)},$tick->{labeldata}{do_not_draw});
       next if $tick->{labeldata}{do_not_draw};
       draw_text(
                 image => $IM,
@@ -6725,6 +6782,7 @@ sub ideogram_spacing {
 								}
 						    );
 
+  printdebug("default spacing",$DIMS->{ideogram}{spacing}{default});
   my $spacing = $DIMS->{ideogram}{spacing}{default};
   my @keys = ( $chr1, $chr2, $tag1, $tag2 );
   my $spacing_found;
@@ -8357,67 +8415,6 @@ sub getxypos {
 	 );
 }
 
-# return the distance between the span
-# [x1,y1] and [x2,y2]
-# if the spans overlap, the distance is negative
-sub span_distance {
-  my ($x1,$y1,$x2,$y2) = @_;
-  # flip the coordinates if they are reversed
-  ($x1,$y1) = ($y1,$x1) if $x1 > $y1;
-  ($x2,$y2) = ($y2,$x2) if $x2 > $y2;
-  # flip intervals so that x1,y1 is always to the left
-  ($x1,$y1,$x2,$y2) = ($x2,$y2,$x1,$y1) if ($x1 > $x2);
-  my $d;
-  if($x2 >= $y1) {
-    # x1 y1
-    # -----  
-    #        x2  y2
-    #        ------
-    $d = $x2 - $y1;
-  } else {
-    if($y2 >= $y1) {
-      # x1     y1
-      # ---------
-      #     x2    y2
-      #     --------
-      $d = -($y1 - $x2);
-    } else {
-      # x1     y1
-      # ---------
-      #   x2  y2
-      #   ------
-      $d = -($y2-$x2);
-    }
-  }
-  die "did not calculate distance between intervals [$x1,$y1] and [$x2,$y2] correctly." unless defined $d;
-  return $d;
-
-  # test
-  for my $i (0..100000) {
-    my @coords = map { sprintf("%.1f",100*rand()) } (0..3);
-    my $s1 = Set::IntSpan->new(sprintf("%d-%d",sort {$a <=> $b} ($coords[0]*1000,$coords[1]*1000)));
-    my $s2 = Set::IntSpan->new(sprintf("%d-%d",sort {$a <=> $b} ($coords[2]*1000,$coords[3]*1000)));
-    my $int = $s1->intersect($s2)->cardinality;
-    my $d   = span_distance(@coords);
-    if($int) {
-      $int = ($int-1)/1000 if $int;
-      if($int && (-$d - $int) > 0.002) {
-	die();
-      }
-    } else {
-      $int = min ( abs($coords[0] - $coords[2]),
-		   abs($coords[0] - $coords[3]),
-		   abs($coords[1] - $coords[2]),
-		   abs($coords[1] - $coords[3]) );
-      if($d - $int > 0.002) {
-	die();
-      }
-    }
-    printinfo(@coords,$d,$int);
-
-  }
-}
-
 # -------------------------------------------------------------------
 sub getrdistance {
   my ( $pos, $chr, $r ) = @_;
@@ -8893,7 +8890,7 @@ sub validate_karyotype {
     my $chrset           = $karyotype->{$chr}{chr}{set};
     my $bandcoverage     = Set::IntSpan->new();
     # Bands can overlap by at most this many bases.
-    my $max_band_overlap = 1;
+    my $max_band_overlap = 1e6;
 
     for my $band ( make_list( $karyotype->{$chr}{band} ) ) {
       if ( $band->{set}->diff($chrset)->cardinality ) {
@@ -9092,9 +9089,12 @@ sub repopulateconfiguration {
       }
     } else {
       while ( $value =~ /__([^_].+?)__/g ) {
+	0&&printdumper(%CONF);
 	my $source = "__" . $1 . "__";
 	my $target = eval $1;
+	printinfo("repopulate","key",$key,"value",$value,"var",$1,"target",$target);
 	$value =~ s/\Q$source\E/$target/g;
+	printinfo("repopulate",$key,$value,$target);
       }
       $root->{$key} = $value;
     }
@@ -9105,6 +9105,7 @@ sub repopulateconfiguration {
 sub loadconfiguration {
   my $arg = shift;
 
+  printf("debugload: using file from argument %s\n",$arg);
   my @possibilities = (
 		       $arg,
 		       catfile( '/home', $ENV{'LOGNAME'}, ".${APP_NAME}.conf" ),
@@ -9115,14 +9116,16 @@ sub loadconfiguration {
 
   my $file;
   for my $f ( @possibilities ) { 
+    printf("debugfile: looking for configuration file %s\n",$f);
     if ( -e $f && -r _ ) {
+      printf("debugfile: found configuration file %s\n",$f);
       $file = $f;
       last;
     }
   }
 
-  if ( ! $file ) {
-    confess "error - could not find the configuration file [$file]";
+  if ( !$file ) {
+    confess "error - could not find any configuration file to use - did you use -conf configfile.conf?";
   }
 
   $OPT{configfile} = $file;
@@ -9131,13 +9134,11 @@ sub loadconfiguration {
 				  -ConfigFile        => $file,
 				  -AllowMultiOptions => 1,
 				  -LowerCaseNames    => 1,
+				  -IncludeAgain      => 1,
 				  -ConfigPath        => [
-							 "$FindBin::RealBin/etc", 
-							 "$FindBin::RealBin/../etc",
-							 "$FindBin::RealBin/..",  
-							 $FindBin::RealBin,
-							 dirname($file),          
-							 "$FindBin::RealBin/../" . dirname($file)
+							 "$FindBin::RealBin/etc", "$FindBin::RealBin/../etc",
+							 "$FindBin::RealBin/..",  $FindBin::RealBin,
+							 dirname($file),          "$FindBin::RealBin/../" . dirname($file)
 							],
 				  -AutoTrue => 1
 				 );
