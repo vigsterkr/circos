@@ -142,7 +142,7 @@ I appreciate any and all comments you may have about Circos.
 2.b  known issues
 
 GD does not draw rotated text correctly when the font size is small. For example,
-using a font size of 6pt, text drawn an an angle is drawn with letters upright. If you
+using a font size of 6pt, text drawn at an angle is drawn with letters upright. If you
 see this, increase the font size of the text.
 
 3. INSTALLATION PROBLEMS
